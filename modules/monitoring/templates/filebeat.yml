@@ -1,0 +1,55 @@
+filebeat.modules:
+- module: system
+  syslog:
+    enabled: true
+    var.paths: ["/var/log/syslog*"]
+  auth:
+    enabled: true
+    var.paths: ["/var/log/auth.log*"]
+- module: nginx
+  access:
+    enabled: true
+    var.paths: ["/var/log/nginx/access.log*"]
+  error:
+    enabled: true
+    var.paths: ["/var/log/nginx/error.log*"]
+    
+    
+filebeat.autodiscover:
+  providers:
+    - type: docker
+      templates:
+          config:
+            - type: docker
+              containers.ids:
+                - "${data.docker.container.id}"
+
+
+filebeat.inputs:
+- type: docker
+  enabled: true
+  containers.ids:
+    - "*"
+  paths:
+    - /var/lib/docker/containers/${data.docker.container.id}/*.log
+  exclude_lines: ["^\\s+[\\-`('.|_]"]  # drop asciiart lines
+  multiline.pattern: "^\t|^[[:space:]]+(at|...)|^Caused by:"
+  multiline.match: after
+  processors:
+    - add_docker_metadata: ~
+    - add_cloud_metadata: ~
+    - add_locale: ~
+
+- type: log
+  enabled: true
+  paths: 
+    - /var/log/gunicorn/*.log
+
+name: filebeat # This name is important as the name of the indices in logstash are based on this
+
+output.logstash:
+  enabled: true
+  hosts: ["${LOGSTASH_HOST}"]
+
+logging.to_files: false
+

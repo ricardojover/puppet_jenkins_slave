@@ -1,0 +1,3 @@
+host myGitServer
+    IdentityFile <%= @jenkins_ssh_folder_path %>/jenkins.key
+    StrictHostKeyChecking no
